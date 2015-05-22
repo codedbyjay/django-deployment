@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+su <%= @username %>
+cd <%= @project_dir %>
+LOGFILE=<%= @project_dir %>/logs/celery-worker.log
+LOGDIR=$(dirname $LOGFILE)
+source bin/activate
+test -d $LOGDIR || mkdir -p $LOGDIR
+exec su -s /bin/sh -c 'exec "$0" "$@"' <%= @username %> -- <%= @project_dir %>/bin/celery -A <%= @project_name %> worker -l info -f $LOGFILE -B -E

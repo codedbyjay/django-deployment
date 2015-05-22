@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+cd <%= @project_dir %>/<%= @project_name %>
+LOGFILE=<%= @project_dir %>/logs/<%= @project_name %>.log
+LOGDIR=$(dirname $LOGFILE)
+NUM_WORKERS=3
+# user/group to run as
+USER=<%= @username %>
+GROUP=<%= @username %>
+source ../bin/activate
+test -d $LOGDIR || mkdir -p $LOGDIR
+cd ../
+exec bin/gunicorn <%= @project_name %>.wsgi:application -w $NUM_WORKERS --user=$USER --group=$GROUP --log-level=debug -b 0.0.0.0:8000 --log-file=$LOGFILE 2>>$LOGFILE --timeout 300 --graceful-timeout 300

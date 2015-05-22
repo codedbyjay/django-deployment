@@ -1,0 +1,6 @@
+description "<%= @project_name %> Celery"
+start on runlevel [2345]
+stop on runlevel [06]
+respawn
+respawn limit 10 5
+exec <%= @project_dir %>/deploy_module/bin/run_celery.sh

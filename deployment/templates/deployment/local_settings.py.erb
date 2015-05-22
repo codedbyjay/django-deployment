@@ -1,0 +1,29 @@
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': '<%= @db_name %>',                      # Or path to database file if using sqlite3.
+        'USER': '<%= @db_user %>',                      # Not used with sqlite3.
+        'PASSWORD': '<%= @db_password %>',                  # Not used with sqlite3.
+        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+    }
+}
+DEBUG = False
+
+SITE_URL = "<%= @site_url %>"
+<% if @use_ssl %>
+ALLOWED_HOSTS = ["<%= @site_url %>"]
+<% else %>
+ALLOWED_HOSTS = ["*"]
+<% end %>
+
+EMAIL_HOST = '<%= @email_host %>'
+EMAIL_HOST_USER = '<%= @email_host_user %>'
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD = '<%= @email_host_password %>'
+EMAIL_PORT = <%= @email_port %>
+EMAIL_USE_TLS = <%= @email_use_tls %>
+
+<% if @use_ssl %>
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+<% end %>
