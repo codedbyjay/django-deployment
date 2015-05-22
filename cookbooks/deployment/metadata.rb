@@ -5,4 +5,7 @@ license          'all_rights'
 description      'Installs/Configures deployment'
 long_description 'Installs/Configures deployment'
 version          '0.1.0'
-
+depends          'postgresql'
+depends          'python'
+depends          'apt'
+depends          'yum'
