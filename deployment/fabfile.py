@@ -28,8 +28,10 @@ DEPLOY_CONFIG_DEFAULT = {
         # "recipe[deployment::default]",
         # "recipe[apt]", 
         # "recipe[python]", 
-        "recipe[database::postgresql]",
-        # "recipe[deployment::setup_postgres]",
+        "recipe[postgresql::apt_pgdg_postgresql]",
+        "recipe[postgresql::server]",
+        "recipe[postgresql::client]",
+        "recipe[deployment::setup_postgres]",
      ],
     # configuration for PostgreSQL
     "postgresql" : {
