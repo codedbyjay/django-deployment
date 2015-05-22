@@ -1,6 +1,7 @@
 from StringIO import StringIO
 import os
 import json
+from pprint import pprint
 
 from django.template.loader import get_template
 from django.template import Context
@@ -12,6 +13,23 @@ from fabric.api import (
 
 import deployment
 from deployment.bb import deploy_key_exists, add_deploy_key
+
+def dict_merge(a, b, path=None):
+    """
+        Obtained from http://stackoverflow.com/questions/7204805/dictionaries-of-dictionaries-merge
+    """
+    if path is None: path = []
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                dict_merge(a[key], b[key], path + [str(key)])
+            elif a[key] == b[key]:
+                pass # same leaf value
+            else:
+                pass # keep a's value
+        else:
+            a[key] = b[key]
+    return a
 
 solo_rb = """
 root = "%s"
@@ -25,13 +43,8 @@ DEPLOY_CONFIG_DEFAULT = {
         "install_method" : "package"
     },
     "run_list": [ 
-        # "recipe[deployment::default]",
-        # "recipe[apt]", 
-        # "recipe[python]", 
-        "recipe[postgresql::apt_pgdg_postgresql]",
-        "recipe[postgresql::server]",
-        "recipe[postgresql::client]",
         "recipe[deployment::setup_postgres]",
+        # "recipe[deployment::default]",
      ],
     # configuration for PostgreSQL
     "postgresql" : {
@@ -55,7 +68,11 @@ DEPLOY_CONFIG_DEFAULT = {
             "packages": ["postgresql-9.3", "postgresql-server-dev-9.3"]
         },
         "contrib": {
-            "packages": ["postgresql-contrib-9.3"]
+            "packages": [
+                "postgresql-contrib-9.3", 
+                "postgresql-9.3-postgis-2.1", 
+                "postgresql-9.3-postgis-scripts"
+            ]
         },
         "password": {
             "postgres": "password"
@@ -75,13 +92,23 @@ DEPLOY_CONFIG_DEFAULT = {
         "deployment" : {
             "username" : "ubuntu",
             "password" : "ubuntu",
+            "deploy_dir" : "/home/ubuntu/web",
+            "project_dir" : "/home/ubuntu/web/project",
             "database_name" : "project",
             "database_user" : "user",
             "database_password" : "password",
+            "database_host" : "",
+            "database_port" : "",
             "server_name" : "My Project",
             "site_url" : "http://localhost",
             "gunicorn_port" : 8000,
-        }
+            "apt_packages" : [
+                "graphviz", "libgraphviz-dev", "pkg-config",
+                "python-virtualenv", "make", "build-essential",
+                "python-dev", "libxml2-dev", "libxslt1-dev",
+                "binutils", "libproj-dev", "gdal-bin", "postgis"
+            ]
+        },
     }
 }
 DEPLOY_CONFIG = {}
@@ -90,31 +117,27 @@ def deploy():
     """ Deploys the Django application
     """
     print("Deploying Django application")
+    # print(json.dumps(get_config(), indent=4, sort_keys=True))
     from django.conf import settings as django_settings
     # Gather some variables
-    username = getattr(django_settings, "DEPLOY_USERNAME", "ubuntu")
-    password = getattr(django_settings, "DEPLOY_PASSWORD", "ubuntu")
-    home_dir = "/home/%s" % username
-    ssh_dir = "%s/.ssh" % home_dir
+    username = get_config("project", "deployment", "username")
+    password = get_config("project", "deployment", "password")
+    home_dir = get_config("project", "deployment", "home_dir")
+    ssh_dir = get_config("project", "deployment", "ssh_dir")
     ssh_key_filename = "%s/id_rsa.pub" % ssh_dir
     ssh_private_key_filename = os.path.splitext(ssh_key_filename)[0]
-    deploy_dir = getattr(django_settings, 
-        "DEPLOY_DIRECTORY",
-        "%s/web" % home_dir
-    )
-    git_branch = getattr(django_settings, "DEPLOY_BRANCH", "master")
-    repository_url = getattr(settings, 
-        "REPOSITORY_URL", local("git config --get remote.origin.url", 
-        capture=True))
-    project_name = os.path.splitext(repository_url.split("/")[-1])[0]
-    project_dir = "%s/%s" % (deploy_dir, project_name)
+    deploy_dir = get_config("project", "deployment", "deploy_dir")
+    git_branch = get_config("project", "deployment", "git_branch")
+    repository = get_config("project", "deployment", "git_repository")
+    project_name = get_config("project", "deployment", "project_name")
+    project_dir = get_config("project", "deployment", "project_dir")
     deploy_key_name = "%s-%s" % (project_name, env.host)
 
     with settings(warn_only=True):
         # make sure the user exists
         if not run("getent passwd %s" % username, quiet=True):
-            print("Creating user: %s" % username)
-            sudo("useradd %s" % username)
+            print("Creating user: %s with password: %s" % (username, password))
+            sudo("useradd %s -m" % username)
             sudo("echo %s:%s | chpasswd" % (username, password))
 
         with cd(home_dir):
@@ -127,7 +150,7 @@ def deploy():
                 result = sudo("cat %s" % ssh_key_filename)
                 sudo('echo -e "Host bitbucket.org\n\tStrictHostKeyChecking no\n" >> %s/config'% ssh_dir, quiet=True, user=username)
 
-            if "bitbucket.org" in repository_url.lower():
+            if "bitbucket.org" in repository.lower():
                 # Make sure a deployment key is added for the project
                 ssh_key = sudo("cat %s" % ssh_key_filename, user=username)
                 if not deploy_key_exists(ssh_key, project_name=project_name):
@@ -146,52 +169,62 @@ def deploy():
 
         # Now to check out the project
         with cd(deploy_dir):
-            with settings(user=username, password=password):
-                if not exists(project_name):
-                    print("Cloning url: %s in directory: %s" % (repository_url, deploy_dir))
-                    run("git clone %s" % repository_url)
-                else:
-                    print("Repository already cloned... moving on")
+            print("Now gonna do things as %s:%s" % (username, password))
+            if not exists(project_name):
+                print("Cloning url: %s in directory: %s" % (repository, deploy_dir))
+                clone_command = "ssh-agent bash -c 'ssh-add %s/id_rsa; git clone %s'" % (ssh_dir, repository)
+                run(clone_command)
+            else:
+                print("Repository already cloned... moving on")
 
-                with cd(project_name):
-                    print("Pulling the latest code")
-                    run("git pull")
-                    run("git checkout %s" % git_branch)
-                    run("git pull")
-                    # Run chef
-                    # Setup solo.rb
-                    solo_rb_contents = StringIO(solo_rb % project_dir)
-                    put(local_path=solo_rb_contents, remote_path="%s/solo.rb" % project_dir)
-                    solo_json_contents = StringIO(get_solo_json())
-                    put(local_path=solo_json_contents, remote_path="%s/solo.json" % project_dir)
-                    # Push up the cookbooks
-                    deployment_cookbooks = os.path.join(os.path.dirname(deployment.__file__), "..", "cookbooks")
-                    put(local_path=deployment_cookbooks, remote_path=project_dir)
-                    # Write the template files out to cookbooks/deployment/templates/default dir on the server
-                    deployment_module_path = os.path.dirname(deployment.__file__)
-                    deployment_template_dir = os.path.join(deployment_module_path, "templates", "deployment")
-                    for template_name in os.listdir(deployment_template_dir):
-                        template_context = Context({})
-                        template_contents = StringIO(get_template("deployment/%s" % template_name).render(template_context))
-                        put(local_path=template_contents, 
-                            remote_path=os.path.join(
-                                    project_dir, 'cookbooks', 'deployment', 
-                                    'templates', 'default', template_name
-                                )
+            with cd(project_name):
+                print("Pulling the latest code")
+                run("git pull")
+                run("git checkout %s" % git_branch)
+                run("git pull")
+                # Run chef
+                # Setup solo.rb
+                solo_rb_contents = StringIO(solo_rb % project_dir)
+                put(local_path=solo_rb_contents, remote_path="%s/solo.rb" % project_dir)
+                solo_json_contents = StringIO(get_solo_json())
+                put(local_path=solo_json_contents, remote_path="%s/solo.json" % project_dir)
+                # Push up the cookbooks
+                deployment_cookbooks = os.path.join(os.path.dirname(deployment.__file__), "..", "cookbooks")
+                put(local_path=deployment_cookbooks, remote_path=project_dir)
+                # Write the template files out to cookbooks/deployment/templates/default dir on the server
+                deployment_module_path = os.path.dirname(deployment.__file__)
+                deployment_template_dir = os.path.join(deployment_module_path, "templates", "deployment")
+                for template_name in os.listdir(deployment_template_dir):
+                    template_context = Context({})
+                    template_contents = StringIO(get_template("deployment/%s" % template_name).render(template_context))
+                    put(local_path=template_contents, 
+                        remote_path=os.path.join(
+                                project_dir, 'cookbooks', 'deployment', 
+                                'templates', 'default', template_name
                             )
-                    with cd("cookbooks"):
-                        # Download extra cookbooks if necessary
-                        for cookbook in get_cookbooks():
-                            filename = "%s*.tar.gz" % cookbook
-                            if not exists(filename):
-                                print("Downloading cookbook: %s" % cookbook)
-                                run("knife cookbook site download %s" % cookbook)
-                        zipped_cookbooks = run("ls *.tar.gz").split()
-                        for zipped_cookbook in zipped_cookbooks:
-                            print("Extracting %s" % zipped_cookbook)
-                            run("tar xvf %s" % zipped_cookbook)
-
-
+                        )
+                with cd("cookbooks"):
+                    # Download extra cookbooks if necessary
+                    for cookbook in get_cookbooks():
+                        if not run("ls | egrep %s-[0-9.].tar.gz" % cookbook, quiet=True):
+                            print("Downloading cookbook: %s" % cookbook)
+                            run("knife cookbook site download %s" % cookbook)
+                    zipped_cookbooks = run("ls *.tar.gz").split()
+                    for zipped_cookbook in zipped_cookbooks:
+                        print("Extracting %s" % zipped_cookbook)
+                        run("tar xf %s" % zipped_cookbook, quiet=True)
+                    with cd("deployment/recipes"):
+                        extra_recipes = getattr(django_settings, "DEPLOY_EXTRA_RECIPES", [])
+                        for extra_recipe in extra_recipes:
+                            template_context = Context({})
+                            template_contents = StringIO(get_template(extra_recipe).render(template_context))
+                            put(local_path=template_contents, 
+                                remote_path=os.path.join(
+                                        project_dir, 'cookbooks', 'deployment', 
+                                        'recipes', extra_recipe
+                                    )
+                                )
+        sudo("chown %s:%s -R %s" % (username, username, deploy_dir))
         # Run Chef as root
         with cd(project_dir):
             sudo("chef-solo -c solo.rb -j solo.json")
@@ -209,33 +242,87 @@ def get_cookbooks():
         "postgresql",
         "openssl",
         "chef-sugar",
+        "yum",
+        "yum-epel",
     ]
     cookbooks.extend(getattr(django_settings, "DEPLOY_COOKBOOKS", []))
     return cookbooks
 
 
-def get_config():
-    """ Gets the configuration for solo.json file
-    """
+def initialize_config():
     from django.conf import settings as django_settings
     if not DEPLOY_CONFIG:
         DEPLOY_CONFIG.update(DEPLOY_CONFIG_DEFAULT)
+        username = getattr(django_settings, "DEPLOY_USERNAME", "ubuntu")
+        password = getattr(django_settings, "DEPLOY_PASSWORD", "ubuntu")
+        home_dir = getattr(django_settings, "DEPLOY_HOME_DIR", 
+            "/home/%s" % username
+        )
+        ssh_dir = "%s/.ssh" % home_dir
+        deploy_dir = getattr(django_settings, 
+            "DEPLOY_DEPLOY_DIR",
+            "%s/web" % home_dir
+        )
+        git_branch = getattr(django_settings, "DEPLOY_GIT_BRANCH", "master")
+        repository = getattr(settings, 
+            "DEPLOY_GIT_REPOSITORY", 
+            local("git config --get remote.origin.url", 
+            capture=True))
+        project_name = os.path.splitext(repository.split("/")[-1])[0]
+        project_dir = "%s/%s" % (deploy_dir, project_name)
+        main_app_name = getattr(django_settings, 
+            "DEPLOY_MAIN_APP_NAME", 
+            project_name
+        )
+        main_app_dir = getattr(django_settings, 
+            "DEPLOY_MAIN_APP_DIR",
+            "%s/%s" % (project_dir, main_app_name)
+        )
+        site_url = getattr(django_settings, "SITE_URL", "http://localhost")
         setting_overrides = {
-            "site_url" : getattr(django_settings, "SITE_URL", "http://localhost"),
+            "project" : {
+                "deployment" : {
+                    "username" : username,
+                    "password" : password,
+                    "home_dir" : home_dir,
+                    "main_app_name" : main_app_name,
+                    "main_app_dir" : main_app_dir,
+                    "ssh_dir" : ssh_dir,
+                    "deploy_dir" : deploy_dir,
+                    "project_dir" : project_dir,
+                    "git_repository" : repository,
+                    "git_branch" : git_branch,
+                    "project_name" : project_name,
+                    "site_url" : site_url
+                }
+            }
         }
-        DEPLOY_CONFIG.update(setting_overrides)
-    return DEPLOY_CONFIG_DEFAULT
+        print(setting_overrides)
+        DEPLOY_CONFIG.update(dict_merge(setting_overrides, DEPLOY_CONFIG))
+
+def get_config(*args):
+    """ Gets the configuration for solo.json file. Supply arguments to get
+        nested variables. So for example, we can say:
+        get_config("project", "deployment", "project_dir")
+    """
+    initialize_config()
+    if not args:
+        return DEPLOY_CONFIG
+    else:
+        val = DEPLOY_CONFIG
+        for arg in args:
+            val = val.get(arg)
+        return val
 
 def add_config(config, override=True):
     """ Adds configuration for solo.json 
     """
     current_config = get_config()
     if override:
-        current_config.update(config)
+        current_config.update(dict_merge(config, current_config))
     else:
-        config = config.copy()
-        config.update(current_config)
-        current_config.update(config)
+        dict_merge(current_config, config)
+
 
 def get_solo_json():
     """ Return the JSON for the solo.json file
