@@ -5,7 +5,6 @@
 # Copyright (c) 2015 Jean-Mark Wright, All Rights Reserved.
 print "Setting us PostgreSQL"
 
-#include_recipe "database::postgres"
 include_recipe "postgresql::apt_pgdg_postgresql"
 include_recipe "postgresql::server"
 include_recipe "postgresql::client"
@@ -37,3 +36,7 @@ psql("CREATE USER #{db_user} WITH PASSWORD '#{db_password}'")
 psql("CREATE DATABASE #{db_name} WITH OWNER #{db_user}")
 psqldb("CREATE EXTENSION postgis", db_name)
 
+service "postgresql" do
+    action :restart
+    ignore_failure true
+end
