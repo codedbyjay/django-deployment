@@ -34,26 +34,6 @@ python_pip "--upgrade pip" do
   user username
 end
 
-# Install GDAL
-bash "Install GDAL" do
-    code <<-EOH
-    add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
-    apt-get update
-    apt-get -y install libgdal1h libgdal-dev python-gdal
-    cd #{project_dir}
-    source bin/activate
-    mkdir /tmp/gdal
-    pip install -d /tmp/gdal GDAL==1.10.0
-    cd /tmp/gdal/
-    tar xvf GDAL-1.10.0.tar.gz
-    cd GDAL-1.10.0
-    sed -i '2s/.*/gdal_config = \/usr\/bin\/gdal-config\//' setup.cfg
-    python setup.py build_ext --include-dirs=/usr/include/gdal
-    pip install .
-    python -c "from osgeo import gdal; print gdal.__version__"
-    EOH
-end
-
 if File.exist?("#{project_dir}/requirements.txt")
     python_pip "--exists-action=w -r #{project_dir}/requirements.txt" do
         virtualenv project_dir
