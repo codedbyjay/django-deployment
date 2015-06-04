@@ -111,6 +111,12 @@ DEPLOY_CONFIG_DEFAULT = {
                 "binutils", "libproj-dev", "gdal-bin", "postgis"
             ]
         },
+    },
+    'rackspace': {
+        'default_image' : '598a4282-f14b-4e50-af4c-b3e52749d9f9',
+        'default_flavor' : 'general1-1',
+        'username' : None,
+        'api_key' : None
     }
 }
 DEPLOY_CONFIG = {}
