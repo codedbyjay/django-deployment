@@ -148,6 +148,8 @@ def deploy():
     project_dir = get_config("project", "deployment", "project_dir")
     deploy_key_name = "%s-%s" % (project_name, env.host)
 
+    sudo("apt-get update --fix-missing") # always start with this...
+
     with settings(warn_only=True):
         # make sure the user exists
         if not run("getent passwd %s" % username, quiet=True):
