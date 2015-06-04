@@ -45,7 +45,7 @@ template "#{main_app_dir}/local_settings.py" do
     action :create
     variables({
         :database_name => node["project"]["database"]["name"],
-        :database_user => node["project"]["database"]["user"],
+        :database_user => node["project"]["database"]["username"],
         :database_password => node["project"]["database"]["password"],
         :database_host => node["project"]["database"]["host"],
         :database_port => node["project"]["database"]["port"],
