@@ -170,18 +170,18 @@ def deploy():
 
             if "bitbucket.org" in repository.lower():
                 # Make sure a deployment key is added for the project
-                ssh_key = sudo("cat %s" % ssh_key_filename, user=username)
+                ssh_key = sudo("cat %s" % ssh_key_filename)
                 if not deploy_key_exists(ssh_key, project_name=project_name):
                     add_deploy_key(ssh_key, project_name=project_name, 
                         label=deploy_key_name)
 
-            if run("chef --version").failed:
+            if run("chef --version", quiet=True).failed:
                 print("Installing ChefDK")
                 with cd("/tmp/"):
-                    sudo("wget https://opscode-omnibus-packages.s3.amazonaws.com/ubuntu/12.04/x86_64/chefdk_0.5.1-1_amd64.deb")
-                    sudo("dpkg -i chefdk_0.5.1-1_amd64.deb")
-                    sudo("rm chefdk_0.5.1-1_amd64.deb")
-            if run("git --version").failed:
+                    sudo("wget https://opscode-omnibus-packages.s3.amazonaws.com/ubuntu/12.04/x86_64/chefdk_0.5.1-1_amd64.deb", quiet=True)
+                    sudo("dpkg -i chefdk_0.5.1-1_amd64.deb", quiet=True)
+                    sudo("rm chefdk_0.5.1-1_amd64.deb", quiet=True)
+            if run("git --version", quiet=True).failed:
                 print("Installing Git")
                 sudo("apt-get install -y git")
 
@@ -190,15 +190,15 @@ def deploy():
             if not exists(project_name):
                 print("Cloning url: %s in directory: %s" % (repository, deploy_dir))
                 clone_command = "git clone %s" % repository
-                run(clone_command)
+                run(clone_command, quiet=True)
             else:
                 print("Repository already cloned... moving on")
 
             with cd(project_name):
                 print("Pulling the latest code")
-                run("git pull")
-                run("git checkout %s" % git_branch)
-                run("git pull")
+                run("git pull", quiet=True)
+                run("git checkout %s" % git_branch, quiet=True)
+                run("git pull", quiet=True)
                 # Run chef
                 # Setup solo.rb
                 solo_rb_contents = StringIO(solo_rb % project_dir)
