@@ -127,8 +127,6 @@ def deploy():
     print("Deploying Django application")
     # print(json.dumps(get_config(), indent=4, sort_keys=True))
     from django.conf import settings as django_settings
-    if hasattr(django_settings, "DEPLOY_CONFIG"):
-        add_config(django_settings.DEPLOY_CONFIG)
     # Gather some variables
     username = get_config("project", "deployment", "username")
     password = get_config("project", "deployment", "password")
@@ -309,6 +307,10 @@ def initialize_config():
         }
         print(setting_overrides)
         DEPLOY_CONFIG.update(dict_merge(setting_overrides, DEPLOY_CONFIG))
+        if hasattr(django_settings, "DEPLOY_CONFIG"):
+            DEPLOY_CONFIG.update(dict_merge(django_settings.DEPLOY_CONFIG,
+                DEPLOY_CONFIG))
+
 
 def get_config(*args):
     """ Gets the configuration for solo.json file. Supply arguments to get
