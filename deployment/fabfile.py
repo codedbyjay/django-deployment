@@ -93,7 +93,7 @@ DEPLOY_CONFIG_DEFAULT = {
             "port" : ""
         },
         "django" : {
-            "commands" : ["syncdb", "migrate"]
+            "commands" : ["syncdb", "migrate"],
             "initial_data" : []
         },
         "deployment" : {
