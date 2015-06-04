@@ -44,7 +44,7 @@ DEPLOY_CONFIG_DEFAULT = {
     },
     "run_list": [ 
         "recipe[deployment::setup_postgres]",
-        # "recipe[deployment::default]",
+        "recipe[deployment::default]",
      ],
     # configuration for PostgreSQL
     "postgresql" : {
