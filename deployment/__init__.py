@@ -2,7 +2,7 @@ import os
 import ConfigParser
 from StringIO import StringIO
 
-from django.conf import settings
+from django.conf import settings as django_settings
 
 from fabric.api import execute, env, run, sudo, cd, put
 from fabric.contrib.files import append
@@ -15,7 +15,7 @@ def setup_fabric_environment(server_name):
     """
     if not server_name:
         raise Exception("Please supply a proper server name")
-    config_file = "%s/server.cfg" % settings.BASE_DIR
+    config_file = "%s/server.cfg" % django_settings.BASE_DIR
     if not os.path.exists(config_file):
         raise Exception("No server.cfg found, please make one")
         return
@@ -38,5 +38,5 @@ def add_server_config(server_name, user, password, ip):
     config.set(server_name, "user", user)
     config.set(server_name, "password", password)
     config.set(server_name, "ip", ip)
-    with open("%s/server.cfg" % settings.BASE_DIR, "a") as config_file:
+    with open("%s/server.cfg" % django_settings.BASE_DIR, "a") as config_file:
         config.write(config_file)
