@@ -12,7 +12,7 @@ include_recipe "postgresql::contrib"
 
 db_user = node["project"]["database"]["username"]
 db_password = node["project"]["database"]["password"]
-db_name = node["project"]["database"]["database"]
+db_name = node["project"]["database"]["name"]
 
 
 def psql(cmd)
@@ -36,8 +36,8 @@ psql("CREATE USER #{db_user} WITH PASSWORD '#{db_password}'")
 psql("CREATE DATABASE #{db_name} WITH OWNER #{db_user}")
 # Install our packages
 extensions = node["postgresql"]["extensions"]
-for extension in extenions do 
-    psqldb("CREATE EXTENSION IF NOT EXISTS #{extenion}", db_name)
+for extension in extensions do 
+    psqldb("CREATE EXTENSION IF NOT EXISTS #{extension}", db_name)
 end
 
 service "postgresql" do

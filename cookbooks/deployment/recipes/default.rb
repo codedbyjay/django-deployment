@@ -31,13 +31,11 @@ end
 
 python_pip "--upgrade pip" do
   virtualenv project_dir
-  user username
 end
 
 if File.exist?("#{project_dir}/requirements.txt")
     python_pip "--exists-action=w -r #{project_dir}/requirements.txt" do
         virtualenv project_dir
-        user username
     end
 end
 
@@ -53,13 +51,11 @@ template "#{main_app_dir}/local_settings.py" do
         :database_port => node["project"]["deployment"]["database_port"],
         :site_url => node["project"]["deployment"]["site_url"],
     })
-    user username
 end
 
 commands = node["project"]["django"]["commands"]
 for command in commands do
     bash "Run manage.py #{command}" do
-        user username
         code <<-EOH
         cd #{project_dir}
         source bin/activate
@@ -72,7 +68,6 @@ end
 initial_datas = node["project"]["django"]["initial_data"]
 for initial_data in initial_datas do
     bash "Run manage.py loaddata #{initial_data}" do
-        user username
         code <<-EOH
         cd #{project_dir}
         source bin/activate
