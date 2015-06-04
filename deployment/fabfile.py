@@ -90,7 +90,8 @@ DEPLOY_CONFIG_DEFAULT = {
             "user" : "user",
             "password" : "password",
             "host" : "",
-            "port" : ""
+            "port" : "",
+            "engine" : "django.contrib.gis.db.backends.postgis",
         },
         "django" : {
             "commands" : ["syncdb", "migrate"],
