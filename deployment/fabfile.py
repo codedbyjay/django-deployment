@@ -87,7 +87,7 @@ DEPLOY_CONFIG_DEFAULT = {
     "project" : {
         "database" : {
             "name" : "project",
-            "user" : "user",
+            "username" : "user",
             "password" : "password",
             "host" : "",
             "port" : "",
