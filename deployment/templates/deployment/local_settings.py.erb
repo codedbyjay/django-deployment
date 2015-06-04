@@ -1,6 +1,6 @@
 DATABASES = {
     'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'ENGINE': '<%= @database_engine %>',
         'NAME': '<%= @database_name %>',                      # Or path to database file if using sqlite3.
         'USER': '<%= @database_user %>',                      # Not used with sqlite3.
         'PASSWORD': '<%= @database_password %>',                  # Not used with sqlite3.
@@ -9,5 +9,4 @@ DATABASES = {
     }
 }
 DEBUG = False
-USERNAME = "<%= node[:project][:deployment][:username] %>"
 SITE_URL = "<%= @site_url %>"

@@ -49,6 +49,7 @@ template "#{main_app_dir}/local_settings.py" do
         :database_password => node["project"]["database"]["password"],
         :database_host => node["project"]["database"]["host"],
         :database_port => node["project"]["database"]["port"],
+        :database_engine => node["project"]["database"]["engine"],
         :site_url => node["project"]["database"]["site_url"],
     })
 end
