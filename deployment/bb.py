@@ -4,11 +4,12 @@ from deployment.utils import red_text
 
 def get_bitbucket():
     from django.conf import settings as django_settings
-    username = getattr(django_settings, "DEPLOY_BITBUCKET_USERNAME", None)
-    client_key = getattr(django_settings, "DEPLOY_BITBUCKET_CLIENT_KEY", None)
-    client_secret = getattr(django_settings, "DEPLOY_BITBUCKET_CLIENT_SECRET", None)
-    token = getattr(django_settings, "DEPLOY_BITBUCKET_ACCESS_TOKEN", None)
-    token_secret = getattr(django_settings, "DEPLOY_BITBUCKET_ACCESS_TOKEN_SECRET", None)
+    from deployment.fabfile import get_config
+    username = get_config("bitbucket", "username")
+    client_key = get_config("bitbucket", "client_key")
+    client_secret = get_config("bitbucket", "client_secret")
+    token = get_config("bitbucket", "access_token")
+    token_secret = get_config("bitbucket", "access_token_secret")
     if not all([username, client_key, client_secret, token, token_secret]):
         return None
     bb = Bitbucket(username)
@@ -27,6 +28,8 @@ def deploy_key_exists(ssh_key, project_name=None):
     if not bb:
         return False
     succ, keys = bb.deploy_key.all(project_name)
+    if not succ:
+        return False
     for key in keys:
         if key["key"] == ssh_key:
             return True
