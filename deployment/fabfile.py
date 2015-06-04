@@ -117,6 +117,13 @@ DEPLOY_CONFIG_DEFAULT = {
         'default_flavor' : 'general1-1',
         'username' : None,
         'api_key' : None
+    },
+    'bitbucket' : {
+        'username' : None,
+        'client_key' : None,
+        'client_secret' : None,
+        'access_token' : None,
+        'access_token_secret' : None
     }
 }
 DEPLOY_CONFIG = {}
