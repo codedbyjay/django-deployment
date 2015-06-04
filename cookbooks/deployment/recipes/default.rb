@@ -44,12 +44,12 @@ template "#{main_app_dir}/local_settings.py" do
     source "local_settings.py.erb"
     action :create
     variables({
-        :database_name => node["project"]["deployment"]["database_name"],
-        :database_user => node["project"]["deployment"]["database_user"],
-        :database_password => node["project"]["deployment"]["database_password"],
-        :database_host => node["project"]["deployment"]["database_host"],
-        :database_port => node["project"]["deployment"]["database_port"],
-        :site_url => node["project"]["deployment"]["site_url"],
+        :database_name => node["project"]["database"]["name"],
+        :database_user => node["project"]["database"]["user"],
+        :database_password => node["project"]["database"]["password"],
+        :database_host => node["project"]["database"]["host"],
+        :database_port => node["project"]["database"]["port"],
+        :site_url => node["project"]["database"]["site_url"],
     })
 end
 
