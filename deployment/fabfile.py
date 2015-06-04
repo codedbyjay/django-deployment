@@ -61,6 +61,7 @@ DEPLOY_CONFIG_DEFAULT = {
             "ident_file" : "/etc/postgresql/9.3/main/pg_ident.conf",
             "external_pid_file" : "/var/run/postgresql/9.3-main.pid"
         },
+        'extensions' : ['postgis'],
         "client": {
             "packages": ["postgresql-client-9.3"]
         },
@@ -88,17 +89,18 @@ DEPLOY_CONFIG_DEFAULT = {
             "name" : "project",
             "user" : "user",
             "password" : "password",
+            "host" : "",
+            "port" : ""
+        },
+        "django" : {
+            "commands" : ["syncdb", "migrate"]
+            "initial_data" : []
         },
         "deployment" : {
             "username" : "ubuntu",
             "password" : "ubuntu",
             "deploy_dir" : "/home/ubuntu/web",
             "project_dir" : "/home/ubuntu/web/project",
-            "database_name" : "project",
-            "database_user" : "user",
-            "database_password" : "password",
-            "database_host" : "",
-            "database_port" : "",
             "server_name" : "My Project",
             "site_url" : "http://localhost",
             "gunicorn_port" : 8000,

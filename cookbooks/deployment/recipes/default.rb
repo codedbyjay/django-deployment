@@ -56,13 +56,27 @@ template "#{main_app_dir}/local_settings.py" do
     user username
 end
 
-bash "Syncdb and migrate" do
-    user username
-    code <<-EOH
-    cd #{project_dir}
-    source bin/activate
-    python manage.py syncdb --noinput
-    python manage.py migrate
-    EOH
+commands = node["project"]["django"]["commands"]
+for command in commands do
+    bash "Run manage.py #{command}" do
+        user username
+        code <<-EOH
+        cd #{project_dir}
+        source bin/activate
+        python manage.py #{command}
+        EOH
+    end
 end
 
+# Load initial data
+initial_datas = node["project"]["django"]["initial_data"]
+for initial_data in initial_datas do
+    bash "Run manage.py loaddata #{initial_data}" do
+        user username
+        code <<-EOH
+        cd #{project_dir}
+        source bin/activate
+        python manage.py #{initial_data}
+        EOH
+    end
+end

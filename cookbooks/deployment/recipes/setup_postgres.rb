@@ -34,7 +34,11 @@ end
 # Create the users and create the database
 psql("CREATE USER #{db_user} WITH PASSWORD '#{db_password}'")
 psql("CREATE DATABASE #{db_name} WITH OWNER #{db_user}")
-psqldb("CREATE EXTENSION postgis", db_name)
+# Install our packages
+extensions = node["postgresql"]["extensions"]
+for extension in extenions do 
+    psqldb("CREATE EXTENSION IF NOT EXISTS #{extenion}", db_name)
+end
 
 service "postgresql" do
     action :restart
