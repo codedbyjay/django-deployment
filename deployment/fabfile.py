@@ -141,18 +141,19 @@ def deploy():
         # make sure the user exists
         if not run("getent passwd %s" % username, quiet=True):
             print("Creating user: %s with password: %s" % (username, password))
-            sudo("useradd %s -m" % username)
+            sudo("useradd %s" % username)
             sudo("echo %s:%s | chpasswd" % (username, password))
 
+        sudo("mkdir -p %s" % home_dir, quiet=True)
         with cd(home_dir):
             # make sure the deploy dir exists...
-            sudo("mkdir -p %s" % deploy_dir, quiet=True, user=username)
+            sudo("mkdir -p %s" % deploy_dir, quiet=True)
             # make sure we have a SSH key
             if not exists(ssh_key_filename):
                 sudo('ssh-keygen -q -t rsa -f %s -N ""' % ssh_private_key_filename, 
-                    quiet=True, user=username)
+                    quiet=True)
                 result = sudo("cat %s" % ssh_key_filename)
-                sudo('echo -e "Host bitbucket.org\n\tStrictHostKeyChecking no\n" >> %s/config'% ssh_dir, quiet=True, user=username)
+                sudo('echo -e "Host bitbucket.org\n\tStrictHostKeyChecking no\n" >> %s/config'% ssh_dir, quiet=True)
 
             if "bitbucket.org" in repository.lower():
                 # Make sure a deployment key is added for the project
@@ -173,10 +174,9 @@ def deploy():
 
         # Now to check out the project
         with cd(deploy_dir):
-            print("Now gonna do things as %s:%s" % (username, password))
             if not exists(project_name):
                 print("Cloning url: %s in directory: %s" % (repository, deploy_dir))
-                clone_command = "ssh-agent bash -c 'ssh-add %s/id_rsa; git clone %s'" % (ssh_dir, repository)
+                clone_command = "git clone %s" % repository
                 run(clone_command)
             else:
                 print("Repository already cloned... moving on")
@@ -262,7 +262,7 @@ def initialize_config():
         home_dir = getattr(django_settings, "DEPLOY_HOME_DIR", 
             "/home/%s" % username
         )
-        ssh_dir = "%s/.ssh" % home_dir
+        ssh_dir = "/root/.ssh"
         deploy_dir = getattr(django_settings, 
             "DEPLOY_DEPLOY_DIR",
             "%s/web" % home_dir
