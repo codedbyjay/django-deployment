@@ -207,7 +207,7 @@ def deploy():
                 solo_json_contents = StringIO(get_solo_json())
                 put(local_path=solo_json_contents, remote_path="%s/solo.json" % project_dir)
                 # Push up the cookbooks
-                deployment_cookbooks = os.path.join(os.path.dirname(deployment.__file__), "..", "cookbooks")
+                deployment_cookbooks = os.path.join(os.path.dirname(deployment.__file__), "cookbooks")
                 put(local_path=deployment_cookbooks, remote_path=project_dir)
                 # Write the template files out to cookbooks/deployment/templates/default dir on the server
                 deployment_module_path = os.path.dirname(deployment.__file__)
