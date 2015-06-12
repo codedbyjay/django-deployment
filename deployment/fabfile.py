@@ -94,7 +94,7 @@ DEPLOY_CONFIG_DEFAULT = {
             "engine" : "django.contrib.gis.db.backends.postgis",
         },
         "django" : {
-            "commands" : ["syncdb", "migrate"],
+            "commands" : ["syncdb --noinput", "migrate --noinput"],
             "initial_data" : []
         },
         "deployment" : {
@@ -149,7 +149,7 @@ def deploy():
     project_dir = get_config("project", "deployment", "project_dir")
     deploy_key_name = "%s-%s" % (project_name, env.host)
 
-    sudo("apt-get update --fix-missing") # always start with this...
+    sudo("apt-get update --fix-missing", quiet=True) # always start with this...
 
     with settings(warn_only=True):
         # make sure the user exists
@@ -212,7 +212,9 @@ def deploy():
                 # Write the template files out to cookbooks/deployment/templates/default dir on the server
                 deployment_module_path = os.path.dirname(deployment.__file__)
                 deployment_template_dir = os.path.join(deployment_module_path, "templates", "deployment")
+                print("Uploading deployment templates")
                 for template_name in os.listdir(deployment_template_dir):
+                    print("Uploading %s" % template_name)
                     template_context = Context({})
                     template_contents = StringIO(get_template("deployment/%s" % template_name).render(template_context))
                     put(local_path=template_contents, 
@@ -224,14 +226,15 @@ def deploy():
                 with cd("cookbooks"):
                     # Download extra cookbooks if necessary
                     for cookbook in get_cookbooks():
-                        if not run("ls | egrep %s-[0-9.].tar.gz" % cookbook, quiet=True):
+                        if not exists(cookbook):
                             print("Downloading cookbook: %s" % cookbook)
                             run("knife cookbook site download %s" % cookbook)
-                    zipped_cookbooks = run("ls *.tar.gz").split()
-                    for zipped_cookbook in zipped_cookbooks:
-                        print("Extracting %s" % zipped_cookbook)
-                        run("tar xf %s" % zipped_cookbook, quiet=True)
+                            # extract this cookbook
+                            zipped_cookbook = run("ls | egrep '%s\-[0-9\.]+\.tar\.gz'" % cookbook).split()[0]
+                            print("Extracting %s" % zipped_cookbook)
+                            run("tar xf %s" % zipped_cookbook, quiet=True)
                     with cd("deployment/recipes"):
+                        print("Uploading recipes from DEPLOY_EXTRA_RECIPES")
                         extra_recipes = getattr(django_settings, "DEPLOY_EXTRA_RECIPES", [])
                         for extra_recipe in extra_recipes:
                             template_context = Context({})
@@ -242,10 +245,11 @@ def deploy():
                                         'recipes', extra_recipe
                                     )
                                 )
-        sudo("chown %s:%s -R %s" % (username, username, deploy_dir))
         # Run Chef as root
         with cd(project_dir):
             sudo("chef-solo -c solo.rb -j solo.json")
+        sudo("chown %s:%s -R %s" % (username, username, deploy_dir))
+
 
 def get_cookbooks():
     """ Returns a list of cookbooks needed 
