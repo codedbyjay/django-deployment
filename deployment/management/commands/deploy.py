@@ -18,6 +18,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        if not options["server"]:
+            print("Please specify a server name with --server")
         setup_fabric_environment(options["server"])
         execute(deploy)
 
