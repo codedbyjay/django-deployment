@@ -109,9 +109,14 @@ DEPLOY_CONFIG_DEFAULT = {
                 "graphviz", "libgraphviz-dev", "pkg-config",
                 "python-virtualenv", "make", "build-essential",
                 "python-dev", "libxml2-dev", "libxslt1-dev",
-                "binutils", "libproj-dev", "gdal-bin", "postgis"
+                "binutils", "libproj-dev", "gdal-bin", "postgis",
+                "nginx"
             ]
         },
+        "apt" : {
+            "packages" : [],
+            "ppas" : []
+        }
     },
     'rackspace': {
         'default_image' : '598a4282-f14b-4e50-af4c-b3e52749d9f9',
