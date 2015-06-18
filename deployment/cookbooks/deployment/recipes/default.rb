@@ -44,7 +44,7 @@ python_pip "--upgrade pip" do
 end
 
 if File.exist?("#{project_dir}/requirements.txt")
-    python_pip "--exists-action=w -r #{project_dir}/requirements.txt" do
+    python_pip "-r #{project_dir}/requirements.txt" do
         virtualenv project_dir
     end
 end
