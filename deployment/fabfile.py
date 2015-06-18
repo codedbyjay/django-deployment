@@ -153,8 +153,13 @@ def deploy():
     project_name = get_config("project", "deployment", "project_name")
     project_dir = get_config("project", "deployment", "project_dir")
     deploy_key_name = "%s-%s" % (project_name, env.host)
-
+    ppas = get_config("project", "apt", "ppas")
+    packages = get_config("project", "apt", "packages")
+    for ppa in ppas:
+        sudo("apt-add-repository -y %s" % ppa)
     sudo("apt-get update --fix-missing", quiet=True) # always start with this...
+    if packages:
+        sudo("apt-get install -y --no-install-recommends %s" % " ".join(packages))
 
     with settings(warn_only=True):
         # make sure the user exists
