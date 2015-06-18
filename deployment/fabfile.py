@@ -224,6 +224,8 @@ def deploy():
                 deployment_template_dir = os.path.join(deployment_module_path, "templates", "deployment")
                 print("Uploading deployment templates")
                 for template_name in os.listdir(deployment_template_dir):
+                    if os.path.isdir("%s/%s" % (deployment_template_dir, template_name)):
+                        continue
                     print("Uploading %s" % template_name)
                     template_context = Context({})
                     template_contents = StringIO(get_template("deployment/%s" % template_name).render(template_context))
@@ -249,10 +251,11 @@ def deploy():
                         for extra_recipe in extra_recipes:
                             template_context = Context({})
                             template_contents = StringIO(get_template(extra_recipe).render(template_context))
+                            template_name = os.path.split(extra_recipe)[1]
                             put(local_path=template_contents, 
                                 remote_path=os.path.join(
                                         project_dir, 'cookbooks', 'deployment', 
-                                        'recipes', extra_recipe
+                                        'recipes', template_name
                                     )
                                 )
         # Run Chef as root
