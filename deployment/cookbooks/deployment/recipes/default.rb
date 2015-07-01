@@ -82,7 +82,7 @@ for initial_data in initial_datas do
         code <<-EOH
         cd #{project_dir}
         source bin/activate
-        python manage.py #{initial_data}
+        python manage.py loaddata #{initial_data}
         EOH
     end
 end
