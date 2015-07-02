@@ -109,9 +109,14 @@ DEPLOY_CONFIG_DEFAULT = {
                 "graphviz", "libgraphviz-dev", "pkg-config",
                 "python-virtualenv", "make", "build-essential",
                 "python-dev", "libxml2-dev", "libxslt1-dev",
-                "binutils", "libproj-dev", "gdal-bin", "postgis"
+                "binutils", "libproj-dev", "gdal-bin", "postgis",
+                "nginx"
             ]
         },
+        "apt" : {
+            "packages" : [],
+            "ppas" : []
+        }
     },
     'rackspace': {
         'default_image' : '598a4282-f14b-4e50-af4c-b3e52749d9f9',
@@ -148,8 +153,13 @@ def deploy():
     project_name = get_config("project", "deployment", "project_name")
     project_dir = get_config("project", "deployment", "project_dir")
     deploy_key_name = "%s-%s" % (project_name, env.host)
-
+    ppas = get_config("project", "apt", "ppas")
+    packages = get_config("project", "apt", "packages")
+    for ppa in ppas:
+        sudo("apt-add-repository -y %s" % ppa)
     sudo("apt-get update --fix-missing", quiet=True) # always start with this...
+    if packages:
+        sudo("apt-get install -y --no-install-recommends %s" % " ".join(packages))
 
     with settings(warn_only=True):
         # make sure the user exists
@@ -214,6 +224,8 @@ def deploy():
                 deployment_template_dir = os.path.join(deployment_module_path, "templates", "deployment")
                 print("Uploading deployment templates")
                 for template_name in os.listdir(deployment_template_dir):
+                    if os.path.isdir("%s/%s" % (deployment_template_dir, template_name)):
+                        continue
                     print("Uploading %s" % template_name)
                     template_context = Context({})
                     template_contents = StringIO(get_template("deployment/%s" % template_name).render(template_context))
@@ -239,10 +251,11 @@ def deploy():
                         for extra_recipe in extra_recipes:
                             template_context = Context({})
                             template_contents = StringIO(get_template(extra_recipe).render(template_context))
+                            template_name = os.path.split(extra_recipe)[1]
                             put(local_path=template_contents, 
                                 remote_path=os.path.join(
                                         project_dir, 'cookbooks', 'deployment', 
-                                        'recipes', extra_recipe
+                                        'recipes', template_name
                                     )
                                 )
         # Run Chef as root
