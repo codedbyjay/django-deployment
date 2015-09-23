@@ -10,7 +10,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='django-deployment',
-    version='0.1.4.2',
+    version='0.1.4.3',
     packages=['deployment'],
     include_package_data=True,
     license='GPL v3 License',  # example license
