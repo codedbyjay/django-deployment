@@ -126,7 +126,7 @@ end
 
 # Setup upstart for celery
 template "/etc/init/#{project_name}-celery.conf" do
-    source "upstart-#{project_name}-celery.conf.erb"
+    source "upstart_celery.conf.erb"
     action :create
     variables({
         :project_dir => project_dir,
